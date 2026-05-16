@@ -26,16 +26,33 @@
             justify-content: center;
         }
 
+        /* LAYOUT OPTIMIERUNG */
         .container {
             width: 100%;
-            max-width: 860px;
+            max-width: 1200px; /* Erhöht für Side-by-Side */
             padding: 24px;
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 400px; /* Bild links (flexibel), Controls rechts (fest) */
             gap: 32px;
+            align-items: start;
         }
 
-        /* VIEWPORT */
+        /* Mobile Version: Alles untereinander */
+        @media (max-width: 900px) {
+            .container {
+                display: flex;
+                flex-direction: column;
+                max-width: 860px;
+            }
+            .viewport {
+                order: 1; /* Bild oben */
+            }
+            .grid, .export-area, footer {
+                order: 2; /* Parameter darunter */
+            }
+        }
+
+        /* VIEWPORT (BILD) */
         .viewport {
             width: 100%;
             background: #111;
@@ -46,10 +63,13 @@
             position: relative;
             min-height: 300px;
             overflow: hidden;
+            position: sticky; /* Hält das Bild beim Scrollen der Parameter im Sichtfeld */
+            top: 24px;
         }
 
         canvas {
             max-width: 100%;
+            height: auto;
             max-height: 80vh;
             image-rendering: pixelated;
         }
@@ -83,15 +103,11 @@
             background: var(--accent);
         }
 
-        /* CONTROLS */
+        /* CONTROLS (PARAMETER RECHTS) */
         .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            display: flex;
+            flex-direction: column;
             gap: 24px;
-        }
-
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: 1fr; }
         }
 
         .section-label {
@@ -183,7 +199,16 @@
         .full-width { grid-column: span 2; }
         input[type="file"] { display: none; }
 
+        /* EXPORT BEREICH */
+        .export-area {
+            grid-column: 2; /* Hält Buttons rechts auf Desktop */
+        }
+        @media (max-width: 900px) {
+            .export-area { grid-column: auto; }
+        }
+
         footer {
+            grid-column: 1 / -1; /* Footer wieder über volle Breite am Ende */
             margin-top: 40px;
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -206,11 +231,13 @@
 <body>
 
 <div class="container">
+    <!-- LINKS: BILD -->
     <div class="viewport" id="viewport">
         <div id="rec-ui" class="rec-indicator">REC</div>
         <canvas id="output-canvas"></canvas>
     </div>
 
+    <!-- RECHTS: PARAMETER -->
     <div class="grid">
         <!-- SIGNAL SECTION -->
         <div>
@@ -261,13 +288,14 @@
                 <button id="btn-crt" class="full-width">CRT_Filter_Off</button>
             </div>
         </div>
-    </div>
 
-    <div>
-        <span class="section-label">Export_Operations</span>
-        <div class="button-group">
-            <button id="btn-save">Still (JPG)</button>
-            <button id="btn-rec">Initialize Record</button>
+        <!-- EXPORT BEREICH (In Grid integriert für rechte Seite) -->
+        <div class="export-area">
+            <span class="section-label">Export_Operations</span>
+            <div class="button-group">
+                <button id="btn-save">Still (JPG)</button>
+                <button id="btn-rec">Initialize Record</button>
+            </div>
         </div>
     </div>
 
@@ -279,6 +307,7 @@
 <video id="hidden-video" autoplay muted loop playsinline style="display:none"></video>
 
 <script>
+    // JS bleibt identisch...
     const canvas = document.getElementById('output-canvas');
     const ctx = canvas.getContext('2d', { alpha: false });
     const video = document.getElementById('hidden-video');
@@ -402,16 +431,10 @@
             document.getElementById('rec-ui').style.display = "none";
         } else {
             recordedChunks = [];
-            let types = [
-                'video/mp4;codecs=avc1',
-                'video/mp4', 
-                'video/webm;codecs=h264',
-                'video/webm' 
-            ];
+            let types = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=h264', 'video/webm'];
             let supportedType = types.find(t => MediaRecorder.isTypeSupported(t));
             const streamOut = canvas.captureStream(30);
             mediaRecorder = new MediaRecorder(streamOut, { mimeType: supportedType });
-
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = () => {
                 const extension = supportedType.includes('mp4') ? 'mp4' : 'webm';
@@ -419,7 +442,6 @@
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(b); a.download = `DR_SIGNAL_${Date.now()}.${extension}`; a.click();
             };
-
             mediaRecorder.start();
             this.classList.add('recording');
             this.textContent = "Stop Recording";
@@ -433,7 +455,6 @@
         a.download = 'DR_STILL.jpg'; a.click();
     };
 
-    // Init
     canvas.width = 800; canvas.height = 450;
     ctx.fillStyle = "#111"; ctx.fillRect(0,0,800,450);
 </script>
