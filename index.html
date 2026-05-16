@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>demien rapp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #000;
+            --fg: #fff;
+            --accent: #FF0000;
+            --font-main: 'Space Grotesk', sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-main);
+            font-size: 14px;
+            line-height: 1.2;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 860px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        /* VIEWPORT */
+        .viewport {
+            width: 100%;
+            background: #111;
+            border: 1px solid var(--fg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 300px;
+            overflow: hidden;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 80vh;
+            image-rendering: pixelated;
+        }
+
+        /* CRT Overlay */
+        .crt-active::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .rec-indicator {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            color: var(--accent);
+            font-weight: bold;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 20;
+        }
+        .rec-indicator::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+        }
+
+        /* CONTROLS */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: block;
+            color: var(--fg);
+            border-left: 2px solid var(--accent);
+            padding-left: 8px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        /* SLIDERS */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 2px;
+            background: #333;
+            outline: none;
+            margin: 14px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 44px;
+            height: 24px;
+            background: var(--fg);
+            border: 1px solid var(--bg);
+            cursor: pointer;
+        }
+
+        input[type="range"]:active::-webkit-slider-thumb {
+            background: var(--accent);
+        }
+
+        /* BUTTONS */
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        button, .file-label {
+            background: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--fg);
+            padding: 14px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            transition: border-color 0.15s, color 0.15s;
+        }
+
+        button:hover, .file-label:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        button.active {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        button#btn-rec.recording {
+            background: var(--accent);
+            color: var(--fg);
+            border-color: var(--accent);
+        }
+
+        .full-width { grid-column: span 2; }
+        input[type="file"] { display: none; }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            border-top: 1px solid #111;
+            padding-top: 12px;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid var(--accent);
+        }
+
+        footer a:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="viewport" id="viewport">
+        <div id="rec-ui" class="rec-indicator">REC</div>
+        <canvas id="output-canvas"></canvas>
+    </div>
+
+    <div class="grid">
+        <!-- SIGNAL SECTION -->
+        <div>
+            <span class="section-label">Signal_Destruction</span>
+            
+            <div class="control-item">
+                <div class="control-header"><span>Compression</span><span id="v-q">30</span></div>
+                <input type="range" id="s-q" min="1" max="100" value="30">
+            </div>
+
+            <div class="control-item">
+                <div class="control-header"><span>Resolution</span><span id="v-r">0.50</span></div>
+                <input type="range" id="s-r" min="0.01" max="1" step="0.01" value="0.50">
+            </div>
+
+            <div class="control-item">
+                <div class="control-header"><span>RGB_Offset</span><span id="v-shift">0</span></div>
+                <input type="range" id="s-shift" min="0" max="20" step="0.5" value="0">
+            </div>
+
+            <div class="control-item">
+                <div class="control-header"><span>Static_Noise</span><span id="v-n">0</span></div>
+                <input type="range" id="s-n" min="0" max="60" value="0">
+            </div>
+        </div>
+
+        <!-- IMAGE SECTION -->
+        <div>
+            <span class="section-label">Image_Parameters</span>
+            
+            <div class="control-item">
+                <div class="control-header"><span>Contrast</span><span id="v-c">1.0</span></div>
+                <input type="range" id="s-c" min="0.5" max="2.5" step="0.05" value="1.0">
+            </div>
+
+            <div class="control-item">
+                <div class="control-header"><span>Saturation</span><span id="v-s">1.0</span></div>
+                <input type="range" id="s-s" min="0" max="3" step="0.05" value="1.0">
+            </div>
+
+            <span class="section-label">IO_Inputs</span>
+            <div class="button-group">
+                <label class="file-label">
+                    Import
+                    <input type="file" id="file-input" accept="image/*,video/*">
+                </label>
+                <button id="btn-webcam">Live</button>
+                <button id="btn-crt" class="full-width">CRT_Filter_Off</button>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <span class="section-label">Export_Operations</span>
+        <div class="button-group">
+            <button id="btn-save">Still (JPG)</button>
+            <button id="btn-rec">Initialize Record</button>
+        </div>
+    </div>
+
+    <footer>
+        THIS WAS MADE BY <a href="https://rappde.com" target="_blank">RAPPDE.COM</a>
+    </footer>
+</div>
+
+<video id="hidden-video" autoplay muted loop playsinline style="display:none"></video>
+
+<script>
+    const canvas = document.getElementById('output-canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    const video = document.getElementById('hidden-video');
+    const fileInput = document.getElementById('file-input');
+    
+    const sliders = {
+        q: document.getElementById('s-q'),
+        r: document.getElementById('s-r'),
+        shift: document.getElementById('s-shift'),
+        n: document.getElementById('s-n'),
+        c: document.getElementById('s-c'),
+        s: document.getElementById('s-s')
+    };
+
+    let sourceMode = 'none', isProcessing = false, currentImage = null, stream = null;
+    let mediaRecorder, recordedChunks = [];
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+
+    function initDim(w, h) {
+        const limit = 1200;
+        const scale = w > limit ? limit / w : 1;
+        canvas.width = Math.floor(w * scale);
+        canvas.height = Math.floor(h * scale);
+    }
+
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        if (file.type.startsWith('video/')) {
+            sourceMode = 'video'; video.src = url;
+            video.onloadedmetadata = () => { initDim(video.videoWidth, video.videoHeight); video.play(); };
+        } else {
+            sourceMode = 'image';
+            const img = new Image();
+            img.onload = () => { currentImage = img; initDim(img.width, img.height); apply(); };
+            img.src = url;
+        }
+    };
+
+    document.getElementById('btn-webcam').onclick = async function() {
+        if (stream) { location.reload(); } 
+        else {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280 } });
+                video.srcObject = stream; sourceMode = 'webcam';
+                this.classList.add('active');
+                video.onloadedmetadata = () => { initDim(video.videoWidth, video.videoHeight); video.play(); };
+            } catch(e) { alert("ERROR: CAMERA_NOT_FOUND"); }
+        }
+    };
+
+    document.getElementById('btn-crt').onclick = function() {
+        const active = document.getElementById('viewport').classList.toggle('crt-active');
+        this.textContent = active ? "CRT_Filter_On" : "CRT_Filter_Off";
+        this.classList.toggle('active');
+    };
+
+    function apply() {
+        if (isProcessing || sourceMode === 'none') return;
+        isProcessing = true;
+
+        const q = sliders.q.value / 100;
+        const r = parseFloat(sliders.r.value);
+        const shift = parseFloat(sliders.shift.value);
+        const noise = parseInt(sliders.n.value);
+
+        tempCanvas.width = Math.max(1, canvas.width * r);
+        tempCanvas.height = Math.max(1, canvas.height * r);
+
+        tempCtx.filter = `contrast(${sliders.c.value}) saturate(${sliders.s.value})`;
+        tempCtx.drawImage(sourceMode === 'image' ? currentImage : video, 0, 0, tempCanvas.width, tempCanvas.height);
+        
+        if (shift > 0) {
+            tempCtx.globalCompositeOperation = "screen";
+            tempCtx.drawImage(tempCanvas, shift, 0); 
+            tempCtx.globalCompositeOperation = "source-over";
+        }
+
+        tempCanvas.toBlob((blob) => {
+            const img = new Image();
+            img.onload = () => {
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                if (noise > 0) {
+                    const idata = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const d = idata.data;
+                    for (let i = 0; i < d.length; i += 4) {
+                        const v = (Math.random() - 0.5) * noise;
+                        d[i] += v; d[i+1] += v; d[i+2] += v;
+                    }
+                    ctx.putImageData(idata, 0, 0);
+                }
+                URL.revokeObjectURL(img.src);
+                isProcessing = false;
+            };
+            img.src = URL.createObjectURL(blob);
+        }, 'image/jpeg', q);
+    }
+
+    function loop() {
+        if (sourceMode === 'video' || sourceMode === 'webcam') apply();
+        requestAnimationFrame(loop);
+    }
+    loop();
+
+    Object.keys(sliders).forEach(k => {
+        sliders[k].oninput = () => {
+            document.getElementById('v-' + k).textContent = sliders[k].value;
+            if(sourceMode === 'image') apply();
+        };
+    });
+
+    document.getElementById('btn-rec').onclick = function() {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            this.classList.remove('recording');
+            this.textContent = "Initialize Record";
+            document.getElementById('rec-ui').style.display = "none";
+        } else {
+            recordedChunks = [];
+            let types = [
+                'video/mp4;codecs=avc1',
+                'video/mp4', 
+                'video/webm;codecs=h264',
+                'video/webm' 
+            ];
+            let supportedType = types.find(t => MediaRecorder.isTypeSupported(t));
+            const streamOut = canvas.captureStream(30);
+            mediaRecorder = new MediaRecorder(streamOut, { mimeType: supportedType });
+
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                const extension = supportedType.includes('mp4') ? 'mp4' : 'webm';
+                const b = new Blob(recordedChunks, { type: `video/${extension}` });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(b); a.download = `DR_SIGNAL_${Date.now()}.${extension}`; a.click();
+            };
+
+            mediaRecorder.start();
+            this.classList.add('recording');
+            this.textContent = "Stop Recording";
+            document.getElementById('rec-ui').style.display = "flex";
+        }
+    };
+
+    document.getElementById('btn-save').onclick = () => {
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/jpeg', 0.95);
+        a.download = 'DR_STILL.jpg'; a.click();
+    };
+
+    // Init
+    canvas.width = 800; canvas.height = 450;
+    ctx.fillStyle = "#111"; ctx.fillRect(0,0,800,450);
+</script>
+</body>
+</html>
