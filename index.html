@@ -1,284 +1,365 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>demien rapp</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <title>SIGNAL · Demien Rapp</title>
+
+    <!-- MANUAL: self-hosted verlangt. Beim Deploy dieses CDN gegen eigene @font-face tauschen. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@500;700&family=Silkscreen&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --bg: #000;
-            --fg: #fff;
-            --accent: #FF0000;
-            --font-main: 'Space Grotesk', sans-serif;
+            --paper: #F2F0EB;
+            --ink: #0B0B0C;
+            --muted: #56565B;
+            --line: #D7D4CC;
+            --hi: #000000;
+            --ink-raise: #E8E5DD;
+            --line-soft: #E3E0D8;
+            --invert-bg: #0B0B0C;
+            --invert-fg: #F2F0EB;
+
+            --container: 1240px;
+            --gutter: clamp(18px, 4vw, 56px);
+            --ease-out: cubic-bezier(.16, 1, .3, 1);
+            --speed: 0.5s;
+
+            --font-display: 'Bricolage Grotesque', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-pixel: 'Silkscreen', monospace;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+        html, body { margin: 0; }
+
         body {
-            margin: 0;
-            background: var(--bg);
-            color: var(--fg);
-            font-family: var(--font-main);
-            font-size: 14px;
-            line-height: 1.2;
-            display: flex;
-            justify-content: center;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--font-body);
+            font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.05rem);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* LAYOUT OPTIMIERUNG */
+        /* ---- INVERTIERTER BLOCK (genau 1x pro Seite) ---- */
+        .topbar {
+            background: var(--invert-bg);
+            color: var(--invert-fg);
+            padding: clamp(20px, 3vw, 34px) var(--gutter);
+        }
+        .topbar-inner {
+            max-width: var(--container);
+            margin: 0 auto;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .brand {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: clamp(2.2rem, 7vw, 5.5rem);
+            line-height: 0.88;
+            letter-spacing: -0.03em;
+            margin: 0;
+            text-transform: uppercase;
+            overflow-wrap: anywhere;
+        }
+        .brand-meta {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            font-size: clamp(0.72rem, 0.7rem + 0.2vw, 0.82rem);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(242, 240, 235, 0.55);
+            margin: 0;
+        }
+        .pixel {
+            font-family: var(--font-pixel);
+            font-size: 0.66em;
+            color: var(--invert-fg);
+            letter-spacing: 0;
+        }
+
+        /* Glitch nur bei Load + Hover, aus bei reduced-motion */
+        @media (prefers-reduced-motion: no-preference) {
+            .brand { animation: glitch var(--speed) var(--ease-out) both; }
+            .topbar:hover .brand { animation: glitch var(--speed) var(--ease-out); }
+            @keyframes glitch {
+                0%   { transform: translateX(0); text-shadow: none; }
+                18%  { transform: translateX(-3px); text-shadow: 3px 0 var(--paper), -3px 0 var(--invert-bg); }
+                36%  { transform: translateX(2px); text-shadow: -2px 0 var(--paper); }
+                54%  { transform: translateX(-1px); text-shadow: 2px 0 var(--paper); }
+                100% { transform: translateX(0); text-shadow: none; }
+            }
+        }
+
+        /* ---- LAYOUT ---- */
         .container {
-            width: 100%;
-            max-width: 1200px; /* Erhöht für Side-by-Side */
-            padding: 24px;
+            max-width: var(--container);
+            margin: 0 auto;
+            padding: clamp(28px, 5vw, 64px) var(--gutter) clamp(40px, 6vw, 96px);
             display: grid;
-            grid-template-columns: 1fr 400px; /* Bild links (flexibel), Controls rechts (fest) */
-            gap: 32px;
+            grid-template-columns: 1fr 380px;
+            gap: clamp(24px, 4vw, 48px);
             align-items: start;
         }
 
-        /* Mobile Version: Alles untereinander */
         @media (max-width: 900px) {
             .container {
                 display: flex;
                 flex-direction: column;
-                max-width: 860px;
+                gap: 24px;
             }
-            .viewport {
-                order: 1; /* Bild oben */
-            }
-            .grid, .export-area, footer {
-                order: 2; /* Parameter darunter */
-            }
+            .viewport { order: 1; }
+            .controls, footer { order: 2; }
+            canvas { max-height: 50vh; } /* Bild klein halten, Regler bleiben erreichbar */
         }
 
-        /* VIEWPORT (BILD) */
+        /* ---- VIEWPORT ---- */
         .viewport {
             width: 100%;
-            background: #111;
-            border: 1px solid var(--fg);
+            background: var(--ink-raise);
+            border: 1px solid var(--ink);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            min-height: 300px;
+            min-height: 280px;
             overflow: hidden;
-            position: sticky; /* Hält das Bild beim Scrollen der Parameter im Sichtfeld */
-            top: 24px;
+            position: sticky;
+            top: 12px;
         }
-
         canvas {
             max-width: 100%;
             height: auto;
             max-height: 80vh;
             image-rendering: pixelated;
+            display: block;
         }
 
-        /* CRT Overlay */
+        /* CRT Overlay (monochrom) */
         .crt-active::after {
             content: "";
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            inset: 0;
+            background: linear-gradient(rgba(11, 11, 12, 0) 50%, rgba(11, 11, 12, 0.18) 50%);
             background-size: 100% 4px;
             pointer-events: none;
             z-index: 10;
         }
+        .viewport { position: sticky; } /* halten */
 
         .rec-indicator {
             position: absolute;
             top: 12px;
             right: 12px;
-            color: var(--accent);
-            font-weight: bold;
             display: none;
             align-items: center;
             gap: 8px;
             z-index: 20;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.14em;
+            padding: 5px 9px;
         }
         .rec-indicator::before {
             content: "";
-            width: 10px;
-            height: 10px;
-            background: var(--accent);
+            width: 9px;
+            height: 9px;
+            background: var(--paper);
+            animation: blink 1s steps(1) infinite;
         }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        /* CONTROLS (PARAMETER RECHTS) */
-        .grid {
+        /* ---- CONTROLS ---- */
+        .controls {
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: clamp(24px, 3vw, 34px);
         }
 
-        .section-label {
-            font-size: 0.75rem;
+        .eyebrow {
+            font-family: var(--font-mono);
             font-weight: 700;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            margin-bottom: 12px;
-            display: block;
-            color: var(--fg);
-            border-left: 2px solid var(--accent);
-            padding-left: 8px;
+            letter-spacing: 0.16em;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .eyebrow::before {
+            content: "";
+            width: 24px;
+            height: 1px;
+            background: var(--ink);
+            flex: none;
         }
 
         .control-item {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
-
         .control-header {
             display: flex;
             justify-content: space-between;
-            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
             text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
         }
+        .control-header .val { color: var(--ink); font-weight: 700; }
 
-        /* SLIDERS */
+        /* ---- SLIDERS (monochrom, radius 0) ---- */
         input[type="range"] {
             -webkit-appearance: none;
+            appearance: none;
             width: 100%;
-            height: 2px;
-            background: #333;
+            height: 1px;
+            background: var(--line);
             outline: none;
-            margin: 14px 0;
+            margin: 16px 0;
+            touch-action: pan-y;
         }
-
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 44px;
-            height: 24px;
-            background: var(--fg);
-            border: 1px solid var(--bg);
+            height: 22px;
+            background: var(--ink);
+            border: 1px solid var(--paper);
+            border-radius: 0;
             cursor: pointer;
         }
-
-        input[type="range"]:active::-webkit-slider-thumb {
-            background: var(--accent);
+        input[type="range"]::-moz-range-thumb {
+            width: 44px;
+            height: 22px;
+            background: var(--ink);
+            border: 1px solid var(--paper);
+            border-radius: 0;
+            cursor: pointer;
         }
+        input[type="range"]:active::-webkit-slider-thumb { background: var(--paper); border-color: var(--ink); }
+        input[type="range"]:active::-moz-range-thumb { background: var(--paper); border-color: var(--ink); }
+        input[type="range"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
 
-        /* BUTTONS */
+        /* ---- BUTTONS ---- */
         .button-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
         }
-
         button, .file-label {
-            background: var(--bg);
-            color: var(--fg);
-            border: 1px solid var(--fg);
+            background: var(--paper);
+            color: var(--ink);
+            border: 1px solid var(--ink);
+            border-radius: 0;
             padding: 14px;
-            font-family: inherit;
-            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.12em;
             cursor: pointer;
             text-align: center;
             display: block;
-            transition: border-color 0.15s, color 0.15s;
+            min-height: 46px;
+            transition: background var(--speed) var(--ease-out), color var(--speed) var(--ease-out);
         }
-
-        button:hover, .file-label:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        button.active {
-            background: var(--fg);
-            color: var(--bg);
-        }
-
-        button#btn-rec.recording {
-            background: var(--accent);
-            color: var(--fg);
-            border-color: var(--accent);
-        }
+        button:hover, .file-label:hover { background: var(--ink); color: var(--paper); }
+        button:focus-visible, .file-label:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+        button.active { background: var(--ink); color: var(--paper); }
+        button#btn-rec.recording { background: var(--ink); color: var(--paper); }
+        button:disabled { opacity: 0.35; cursor: not-allowed; }
+        button:disabled:hover { background: var(--paper); color: var(--ink); }
 
         .full-width { grid-column: span 2; }
         input[type="file"] { display: none; }
 
-        /* EXPORT BEREICH */
-        .export-area {
-            grid-column: 2; /* Hält Buttons rechts auf Desktop */
-        }
-        @media (max-width: 900px) {
-            .export-area { grid-column: auto; }
-        }
-
         footer {
-            grid-column: 1 / -1; /* Footer wieder über volle Breite am Ende */
-            margin-top: 40px;
-            font-size: 0.75rem;
+            grid-column: 1 / -1;
+            margin-top: 8px;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
             text-transform: uppercase;
-            border-top: 1px solid #111;
-            padding-top: 12px;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            border-top: 1px solid var(--line);
+            padding-top: 16px;
         }
-
         footer a {
-            color: var(--accent);
+            color: var(--ink);
             text-decoration: none;
-            border-bottom: 1px solid var(--accent);
+            border-bottom: 1px solid var(--ink);
+            transition: background var(--speed) var(--ease-out), color var(--speed) var(--ease-out);
         }
-
-        footer a:hover {
-            background: var(--accent);
-            color: var(--bg);
-        }
+        footer a:hover { background: var(--ink); color: var(--paper); }
     </style>
 </head>
 <body>
 
-<div class="container">
+<header class="topbar">
+    <div class="topbar-inner">
+        <h1 class="brand">Compression_Unit</h1>
+    </div>
+</header>
+
+<main class="container">
     <!-- LINKS: BILD -->
-    <div class="viewport" id="viewport">
+    <section class="viewport" id="viewport">
         <div id="rec-ui" class="rec-indicator">REC</div>
         <canvas id="output-canvas"></canvas>
-    </div>
+    </section>
 
     <!-- RECHTS: PARAMETER -->
-    <div class="grid">
-        <!-- SIGNAL SECTION -->
+    <aside class="controls">
         <div>
-            <span class="section-label">Signal_Destruction</span>
-            
             <div class="control-item">
-                <div class="control-header"><span>Compression</span><span id="v-q">30</span></div>
+                <div class="control-header"><span>Compression</span><span class="val" id="v-q">30</span></div>
                 <input type="range" id="s-q" min="1" max="100" value="30">
             </div>
 
             <div class="control-item">
-                <div class="control-header"><span>Resolution</span><span id="v-r">0.50</span></div>
+                <div class="control-header"><span>Resolution</span><span class="val" id="v-r">0.50</span></div>
                 <input type="range" id="s-r" min="0.01" max="1" step="0.01" value="0.50">
             </div>
 
             <div class="control-item">
-                <div class="control-header"><span>RGB_Offset</span><span id="v-shift">0</span></div>
+                <div class="control-header"><span>RGB_Offset</span><span class="val" id="v-shift">0</span></div>
                 <input type="range" id="s-shift" min="0" max="20" step="0.5" value="0">
             </div>
 
             <div class="control-item">
-                <div class="control-header"><span>Static_Noise</span><span id="v-n">0</span></div>
+                <div class="control-header"><span>Static_Noise</span><span class="val" id="v-n">0</span></div>
                 <input type="range" id="s-n" min="0" max="60" value="0">
             </div>
         </div>
 
-        <!-- IMAGE SECTION -->
         <div>
-            <span class="section-label">Image_Parameters</span>
-            
             <div class="control-item">
-                <div class="control-header"><span>Contrast</span><span id="v-c">1.0</span></div>
+                <div class="control-header"><span>Contrast</span><span class="val" id="v-c">1.0</span></div>
                 <input type="range" id="s-c" min="0.5" max="2.5" step="0.05" value="1.0">
             </div>
 
             <div class="control-item">
-                <div class="control-header"><span>Saturation</span><span id="v-s">1.0</span></div>
+                <div class="control-header"><span>Saturation</span><span class="val" id="v-s">1.0</span></div>
                 <input type="range" id="s-s" min="0" max="3" step="0.05" value="1.0">
             </div>
+        </div>
 
-            <span class="section-label">IO_Inputs</span>
+        <div>
             <div class="button-group">
                 <label class="file-label">
                     Import
@@ -289,30 +370,40 @@
             </div>
         </div>
 
-        <!-- EXPORT BEREICH (In Grid integriert für rechte Seite) -->
-        <div class="export-area">
-            <span class="section-label">Export_Operations</span>
+        <div>
             <div class="button-group">
                 <button id="btn-save">Still (JPG)</button>
                 <button id="btn-rec">Initialize Record</button>
             </div>
         </div>
-    </div>
+    </aside>
 
     <footer>
-        THIS WAS MADE BY <a href="https://rappde.com" target="_blank">RAPPDE.COM</a>
+        THIS WAS MADE BY <a href="https://rappde.com" target="_blank" rel="noopener">RAPPDE.COM</a>
     </footer>
-</div>
+</main>
 
 <video id="hidden-video" autoplay muted loop playsinline style="display:none"></video>
 
 <script>
-    // JS bleibt identisch...
     const canvas = document.getElementById('output-canvas');
     const ctx = canvas.getContext('2d', { alpha: false });
     const video = document.getElementById('hidden-video');
     const fileInput = document.getElementById('file-input');
-    
+    const btnWebcam = document.getElementById('btn-webcam');
+    const btnRec = document.getElementById('btn-rec');
+
+    // captureStream fehlt z.B. auf iOS Safari -> Aufnahme dort ehrlich deaktivieren
+    const recSupported = typeof canvas.captureStream === 'function' && typeof window.MediaRecorder === 'function';
+    if (!recSupported) {
+        btnRec.disabled = true;
+        btnRec.textContent = 'Rec N/A';
+    }
+
+    // Mobil weniger interne Auflösung -> spürbar flüssiger bei gleichem Look
+    const RES_LIMIT = (window.matchMedia('(pointer: coarse)').matches
+        || window.matchMedia('(max-width: 900px)').matches) ? 720 : 1200;
+
     const sliders = {
         q: document.getElementById('s-q'),
         r: document.getElementById('s-r'),
@@ -322,24 +413,69 @@
         s: document.getElementById('s-s')
     };
 
-    let sourceMode = 'none', isProcessing = false, currentImage = null, stream = null;
+    let sourceMode = 'none';
+    let isProcessing = false;
+    let currentImage = null;
+    let stream = null;
     let mediaRecorder, recordedChunks = [];
+
+    // Kleiner Scratch-Canvas: Downscale + Noise + JPEG-Encode
     const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
+    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+
+    // Scratch-Canvas für Kanal-Versatz (chromatische Aberration)
+    const rgbCanvas = document.createElement('canvas');
+    const rgbCtx = rgbCanvas.getContext('2d');
 
     function initDim(w, h) {
-        const limit = 1200;
+        const limit = RES_LIMIT;
         const scale = w > limit ? limit / w : 1;
         canvas.width = Math.floor(w * scale);
         canvas.height = Math.floor(h * scale);
     }
 
+    // Leerer Zustand: Paper-Fläche mit Mono-Label statt schwarzem Block
+    function drawPlaceholder() {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#E8E5DD';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0B0B0C';
+        const fs = Math.max(14, Math.round(canvas.width * 0.035));
+        ctx.font = '700 ' + fs + "px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('NO INPUT', canvas.width / 2, canvas.height / 2);
+    }
+
+    function stopStream() {
+        if (!stream) return;
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+        video.srcObject = null;
+        btnWebcam.classList.remove('active');
+        btnWebcam.textContent = 'Live';
+    }
+
+    // Blob -> dekodiertes Bild. createImageBitmap ist schneller und braucht keine ObjectURL.
+    function decodeBlob(blob) {
+        if (window.createImageBitmap) return createImageBitmap(blob);
+        return new Promise((res, rej) => {
+            const img = new Image();
+            const u = URL.createObjectURL(blob);
+            img.onload = () => { URL.revokeObjectURL(u); res(img); };
+            img.onerror = () => { URL.revokeObjectURL(u); rej(new Error('decode')); };
+            img.src = u;
+        });
+    }
+
     fileInput.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        stopStream();
         const url = URL.createObjectURL(file);
         if (file.type.startsWith('video/')) {
-            sourceMode = 'video'; video.src = url;
+            sourceMode = 'video';
+            video.src = url;
             video.onloadedmetadata = () => { initDim(video.videoWidth, video.videoHeight); video.play(); };
         } else {
             sourceMode = 'image';
@@ -349,15 +485,25 @@
         }
     };
 
-    document.getElementById('btn-webcam').onclick = async function() {
-        if (stream) { location.reload(); } 
-        else {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280 } });
-                video.srcObject = stream; sourceMode = 'webcam';
-                this.classList.add('active');
-                video.onloadedmetadata = () => { initDim(video.videoWidth, video.videoHeight); video.play(); };
-            } catch(e) { alert("ERROR: CAMERA_NOT_FOUND"); }
+    btnWebcam.onclick = async function() {
+        if (stream) {
+            stopStream();
+            sourceMode = 'none';
+            drawPlaceholder();
+            return;
+        }
+        try {
+            // Mobil: Rückkamera bevorzugen. Desktop nimmt die einzige Cam.
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 1280 }, facingMode: { ideal: 'environment' } }
+            });
+            video.srcObject = stream;
+            sourceMode = 'webcam';
+            this.classList.add('active');
+            this.textContent = 'Stop Live';
+            video.onloadedmetadata = () => { initDim(video.videoWidth, video.videoHeight); video.play(); };
+        } catch (e) {
+            alert('ERROR: CAMERA_NOT_FOUND');
         }
     };
 
@@ -369,49 +515,91 @@
 
     function apply() {
         if (isProcessing || sourceMode === 'none') return;
+        if (sourceMode === 'image' && !currentImage) return;
         isProcessing = true;
 
         const q = sliders.q.value / 100;
         const r = parseFloat(sliders.r.value);
-        const shift = parseFloat(sliders.shift.value);
         const noise = parseInt(sliders.n.value);
 
-        tempCanvas.width = Math.max(1, canvas.width * r);
-        tempCanvas.height = Math.max(1, canvas.height * r);
+        const tw = Math.max(1, Math.round(canvas.width * r));
+        const th = Math.max(1, Math.round(canvas.height * r));
+        tempCanvas.width = tw;
+        tempCanvas.height = th;
 
         tempCtx.filter = `contrast(${sliders.c.value}) saturate(${sliders.s.value})`;
-        tempCtx.drawImage(sourceMode === 'image' ? currentImage : video, 0, 0, tempCanvas.width, tempCanvas.height);
-        
-        if (shift > 0) {
-            tempCtx.globalCompositeOperation = "screen";
-            tempCtx.drawImage(tempCanvas, shift, 0); 
-            tempCtx.globalCompositeOperation = "source-over";
+        tempCtx.drawImage(sourceMode === 'image' ? currentImage : video, 0, 0, tw, th);
+        tempCtx.filter = 'none';
+
+        // Noise auf dem kleinen Canvas VOR der Kompression. Schnell, JPEG frisst es mit.
+        if (noise > 0) {
+            const idata = tempCtx.getImageData(0, 0, tw, th);
+            const d = idata.data;
+            for (let i = 0; i < d.length; i += 4) {
+                const v = (Math.random() - 0.5) * noise;
+                d[i] += v; d[i + 1] += v; d[i + 2] += v;
+            }
+            tempCtx.putImageData(idata, 0, 0);
         }
 
         tempCanvas.toBlob((blob) => {
-            const img = new Image();
-            img.onload = () => {
-                ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                if (noise > 0) {
-                    const idata = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const d = idata.data;
-                    for (let i = 0; i < d.length; i += 4) {
-                        const v = (Math.random() - 0.5) * noise;
-                        d[i] += v; d[i+1] += v; d[i+2] += v;
-                    }
-                    ctx.putImageData(idata, 0, 0);
-                }
-                URL.revokeObjectURL(img.src);
+            if (!blob) { isProcessing = false; return; }
+            decodeBlob(blob).then(bmp => {
+                drawFinal(bmp);
+                if (bmp.close) bmp.close();
                 isProcessing = false;
-            };
-            img.src = URL.createObjectURL(blob);
+            }).catch(() => { isProcessing = false; });
         }, 'image/jpeg', q);
     }
 
+    function drawFinal(bmp) {
+        const shift = parseFloat(sliders.shift.value);
+        ctx.imageSmoothingEnabled = false;
+        if (shift > 0) {
+            drawRGBSplit(bmp, shift);
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    // Echter Kanal-Versatz: R/G/B isoliert, horizontal verschoben, additiv zusammengesetzt.
+    function drawRGBSplit(bmp, shift) {
+        const w = canvas.width, h = canvas.height;
+        if (rgbCanvas.width !== w || rgbCanvas.height !== h) {
+            rgbCanvas.width = w;
+            rgbCanvas.height = h;
+        }
+        rgbCtx.imageSmoothingEnabled = false;
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = 'lighter';
+
+        const channels = [
+            { color: '#ff0000', dx: shift },
+            { color: '#00ff00', dx: 0 },
+            { color: '#0000ff', dx: -shift }
+        ];
+
+        for (const ch of channels) {
+            rgbCtx.globalCompositeOperation = 'source-over';
+            rgbCtx.clearRect(0, 0, w, h);
+            rgbCtx.drawImage(bmp, 0, 0, w, h);
+            rgbCtx.globalCompositeOperation = 'multiply';
+            rgbCtx.fillStyle = ch.color;
+            rgbCtx.fillRect(0, 0, w, h);
+            ctx.drawImage(rgbCanvas, ch.dx, 0);
+        }
+
+        ctx.globalCompositeOperation = 'source-over';
+    }
+
     function loop() {
-        if (sourceMode === 'video' || sourceMode === 'webcam') apply();
+        if ((sourceMode === 'video' || sourceMode === 'webcam') && video.readyState >= 2) {
+            apply();
+        }
         requestAnimationFrame(loop);
     }
     loop();
@@ -419,11 +607,11 @@
     Object.keys(sliders).forEach(k => {
         sliders[k].oninput = () => {
             document.getElementById('v-' + k).textContent = sliders[k].value;
-            if(sourceMode === 'image') apply();
+            if (sourceMode === 'image') apply();
         };
     });
 
-    document.getElementById('btn-rec').onclick = function() {
+    btnRec.onclick = function() {
         if (mediaRecorder && mediaRecorder.state === "recording") {
             mediaRecorder.stop();
             this.classList.remove('recording');
@@ -440,7 +628,9 @@
                 const extension = supportedType.includes('mp4') ? 'mp4' : 'webm';
                 const b = new Blob(recordedChunks, { type: `video/${extension}` });
                 const a = document.createElement('a');
-                a.href = URL.createObjectURL(b); a.download = `DR_SIGNAL_${Date.now()}.${extension}`; a.click();
+                a.href = URL.createObjectURL(b);
+                a.download = `DR_SIGNAL_${Date.now()}.${extension}`;
+                a.click();
             };
             mediaRecorder.start();
             this.classList.add('recording');
@@ -452,11 +642,17 @@
     document.getElementById('btn-save').onclick = () => {
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/jpeg', 0.95);
-        a.download = 'DR_STILL.jpg'; a.click();
+        a.download = 'DR_STILL.jpg';
+        a.click();
     };
 
+    // Init
     canvas.width = 800; canvas.height = 450;
-    ctx.fillStyle = "#111"; ctx.fillRect(0,0,800,450);
+    drawPlaceholder();
+    // Placeholder neu zeichnen sobald der Mono-Font geladen ist
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => { if (sourceMode === 'none') drawPlaceholder(); });
+    }
 </script>
 </body>
 </html>
